@@ -1,0 +1,222 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: receiver-service-template
+  annotations:
+    description: "Description"
+parameters:
+labels:
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: receiver
+      group: com.yourcompany.newapp
+      module: receiver
+      provider: fabric8
+      version: 1.0.0
+    name: receiver
+  spec:
+    lookupPolicy:
+      local: true
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    labels:
+      app: receiver
+      expose: "true"
+      group: com.yourcompany.newapp
+      provider: fabric8
+      version: 1.0.0
+    name: receiver
+  spec:
+    port:
+      targetPort: 8080
+    to:
+      kind: Service
+      name: receiver
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      fabric8.io/git-branch: master
+      fabric8.io/git-commit: 90b4bd47a48395559348611cffa18545af289099
+      fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
+      prometheus.io/port: "9779"
+      prometheus.io/scrape: "true"
+    labels:
+      app: receiver
+      expose: "true"
+      group: com.yourcompany.newapp
+      module: receiver
+      provider: fabric8
+      version: 1.0.0
+    name: receiver
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: receiver
+      group: com.yourcompany.newapp
+      provider: fabric8
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      fabric8.io/git-branch: master
+      fabric8.io/git-commit: 90b4bd47a48395559348611cffa18545af289099
+      fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
+    labels:
+      app: receiver
+      group: com.yourcompany.newapp
+      module: receiver
+      provider: fabric8
+      version: 1.0.0
+    name: receiver
+  spec:
+    replicas: 1
+    selector:
+      app: receiver
+      group: com.yourcompany.newapp
+      provider: fabric8
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 3600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          fabric8.io/git-branch: master
+          fabric8.io/git-commit: 90b4bd47a48395559348611cffa18545af289099
+          fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
+          sidecar.istio.io/inject: "true"
+        labels:
+          app: receiver
+          group: com.yourcompany.newapp
+          module: receiver
+          provider: fabric8
+          version: 1.0.0
+      spec:
+        containers:
+        - args:
+          - -c
+          - until $(curl -o /dev/null -s -I -f http://localhost:15000); do echo "Waiting
+            for Istio Sidecar..."; sleep 1; done; sleep 10; /usr/local/s2i/run
+          command:
+          - /bin/bash
+          env:
+          - name: VERTX_CONFIG_PATH
+            value: /deployments/conf/config.yml
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          imagePullPolicy: IfNotPresent
+          name: vertx
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /deployments/conf
+            name: config
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+            - key: app-config.yml
+              path: config.yml
+            name: vertx-app-config
+            optional: true
+          name: config
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - vertx
+        from:
+          kind: ImageStreamTag
+          name: receiver:latest
+      type: ImageChange
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: receiver
+      group: com.yourcompany.newapp
+      module: receiver
+      provider: fabric8
+      version: 1.0.0
+    name: receiver-s2i
+  spec:
+    nodeSelector: {}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: receiver:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: 'https://github.com/hello-world-msa-demo/receiver-service.git'
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: DockerImage
+          name: registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift
+      type: Source
+    triggers:
+    - type: ImageChange
+      imageChange: {}
+    - type: ConfigChange
+- apiVersion: v1
+  data:
+    app-config.yml: "name: Receiver\nmessage: \n  template: \"%s, %s from %s!\"\n
+      \ service:\n    host: message\n    port: 8080"
+  kind: ConfigMap
+  metadata:
+    labels:
+      app: 
+      group: com.yourcompany.newapp
+      module: receiver
+      provider: fabric8
+      version: 1.0.0
+    name: vertx-app-config
