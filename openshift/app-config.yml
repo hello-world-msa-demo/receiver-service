@@ -1,0 +1,6 @@
+name: Receiver
+message: 
+  template: "%s, %s from %s!"
+  service:
+    host: message
+    port: 8080

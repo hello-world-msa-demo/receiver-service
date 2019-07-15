@@ -1,0 +1,7 @@
+# Configuration used with vertx:run for local development.
+name: Receiver
+message: 
+  template: "%s, %s from %s! (LOCAL)"
+  service:
+    host: localhost
+    port: 8080
