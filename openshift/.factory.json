@@ -1,0 +1,118 @@
+{
+  "v": "4.0",
+  "name": "factory-receiver-service",
+  "workspace": {
+    "defaultEnv": "default",
+    "environments": {
+      "default": {
+        "machines": {
+          "dev-machine": {
+            "attributes": {
+              "memoryLimitBytes": "2147483648"
+            },
+            "servers": {
+              "vertx-debug": {
+                "port": "5005",
+                "attributes": {},
+                "protocol": "http"
+              },
+              "vertx": {
+                "port": "8080",
+                "attributes": {},
+                "protocol": "http"
+              }
+            },
+            "volumes": {
+              "m2": {
+                "path": "/home/jboss/.m2"
+              },
+              "javadata": {
+                "path": "/home/jboss/jdtls/data"
+              }
+            },
+            "installers": [
+              "org.eclipse.che.exec",
+              "org.eclipse.che.terminal",
+              "org.eclipse.che.ws-agent",
+              "org.eclipse.che.ls.java",
+              "com.redhat.bayesian.lsp"
+            ],
+            "env": {}
+          }
+        },
+        "recipe": {
+          "type": "dockerimage",
+          "content": "registry.redhat.io/codeready-workspaces/stacks-java-rhel8"
+        }
+      }
+    },
+    "projects": [
+      {
+        "links": [],
+        "name": "receiver-service",
+        "attributes": {},
+        "type": "maven",
+        "source": {
+          "location": "https://github.com/hello-world-msa-demo/receiver-service.git",
+          "type": "github",
+          "parameters": {
+            "branch": "master"
+          }
+        },
+        "path": "/receiver-service",
+        "problems": [],
+        "mixins": []
+      }
+    ],
+    "name": "wksp-receiver",
+    "attributes": {},
+    "commands": [
+      {
+        "commandLine": "MAVEN_OPTS='-Xmx200m' && mvn clean install -f ${current.project.path}/pom.xml",
+        "name": "build",
+        "attributes": {
+          "goal": "Build",
+          "previewUrl": ""
+        },
+        "type": "mvn"
+      },
+      {
+        "commandLine": "MAVEN_OPTS='-Xmx200m' && mvn vertx:debug -f ${current.project.path}/pom.xml -Dvertx.disableDnsResolver=true",
+        "name": "debug",
+        "attributes": {
+          "goal": "Debug",
+          "previewUrl": "${server.vertx}"
+        },
+        "type": "custom"
+      },
+      {
+        "commandLine": "${HOME}/stack-analysis.sh -f ${current.project.path}/pom.xml -p ${current.project.path}",
+        "name": "dependency_analysis",
+        "attributes": {
+          "goal": "Run",
+          "previewUrl": ""
+        },
+        "type": "custom"
+      },
+      {
+        "commandLine": "MAVEN_OPTS='-Xmx200m' && mvn vertx:run -f ${current.project.path}/pom.xml -Dvertx.disableDnsResolver=true",
+        "name": "run",
+        "attributes": {
+          "goal": "Run",
+          "previewUrl": "${server.vertx}"
+        },
+        "type": "custom"
+      },
+      {
+        "commandLine": "MAVEN_OPTS='-Xmx200m' && mvn -f ${current.project.path}/pom.xml clean fabric8:deploy -Popenshift -DskipTests",
+        "name": "deploy to OpenShift",
+        "attributes": {
+          "goal": "Run",
+          "previewUrl": ""
+        },
+        "type": "mvn"
+      }
+    ],
+    "links": []
+  }
+}
