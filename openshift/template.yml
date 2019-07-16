@@ -5,18 +5,23 @@ metadata:
   annotations:
     description: "Description"
 parameters:
+- displayName: "Application Name"
+  description: "The name for the application."
+  name: APPLICATION_NAME
+  value: receiver
+  required: true
 labels:
 objects:
 - apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
     labels:
-      app: receiver
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       module: receiver
       provider: fabric8
       version: 1.0.0
-    name: receiver
+    name: ${APPLICATION_NAME}
   spec:
     lookupPolicy:
       local: true
@@ -26,18 +31,18 @@ objects:
     annotations:
       openshift.io/host.generated: "true"
     labels:
-      app: receiver
+      app: ${APPLICATION_NAME}
       expose: "true"
       group: com.yourcompany.newapp
       provider: fabric8
       version: 1.0.0
-    name: receiver
+    name: ${APPLICATION_NAME}
   spec:
     port:
       targetPort: 8080
     to:
       kind: Service
-      name: receiver
+      name: ${APPLICATION_NAME}
       weight: 100
     wildcardPolicy: None
 - apiVersion: v1
@@ -50,13 +55,13 @@ objects:
       prometheus.io/port: "9779"
       prometheus.io/scrape: "true"
     labels:
-      app: receiver
+      app: ${APPLICATION_NAME}
       expose: "true"
       group: com.yourcompany.newapp
       module: receiver
       provider: fabric8
       version: 1.0.0
-    name: receiver
+    name: ${APPLICATION_NAME}
   spec:
     ports:
     - name: http
@@ -64,7 +69,7 @@ objects:
       protocol: TCP
       targetPort: 8080
     selector:
-      app: receiver
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       provider: fabric8
     sessionAffinity: None
@@ -74,19 +79,18 @@ objects:
   metadata:
     annotations:
       fabric8.io/git-branch: master
-      fabric8.io/git-commit: 90b4bd47a48395559348611cffa18545af289099
       fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
     labels:
-      app: receiver
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       module: receiver
       provider: fabric8
       version: 1.0.0
-    name: receiver
+    name: ${APPLICATION_NAME}
   spec:
     replicas: 1
     selector:
-      app: receiver
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       provider: fabric8
     strategy:
@@ -107,7 +111,7 @@ objects:
           fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
           sidecar.istio.io/inject: "true"
         labels:
-          app: receiver
+          app: ${APPLICATION_NAME}
           group: com.yourcompany.newapp
           module: receiver
           provider: fabric8
@@ -159,7 +163,7 @@ objects:
             items:
             - key: app-config.yml
               path: config.yml
-            name: vertx-app-config
+            name: ${APPLICATION_NAME}-app-config
             optional: true
           name: config
     test: false
@@ -171,24 +175,24 @@ objects:
         - vertx
         from:
           kind: ImageStreamTag
-          name: receiver:latest
+          name: ${APPLICATION_NAME}:latest
       type: ImageChange
 - apiVersion: build.openshift.io/v1
   kind: BuildConfig
   metadata:
     labels:
-      app: receiver
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       module: receiver
       provider: fabric8
       version: 1.0.0
-    name: receiver-s2i
+    name: ${APPLICATION_NAME}-s2i
   spec:
     nodeSelector: {}
     output:
       to:
         kind: ImageStreamTag
-        name: receiver:latest
+        name: ${APPLICATION_NAME}:latest
     postCommit: {}
     resources: {}
     runPolicy: Serial
@@ -209,14 +213,14 @@ objects:
     - type: ConfigChange
 - apiVersion: v1
   data:
-    app-config.yml: "name: Receiver\nmessage: \n  template: \"%s, %s from %s!\"\n
+    app-config.yml: "name: ${APPLICATION_NAME}\nmessage: \n  template: \"%s, %s from %s!\"\n
       \ service:\n    host: message\n    port: 8080"
   kind: ConfigMap
   metadata:
     labels:
-      app: 
+      app: ${APPLICATION_NAME}
       group: com.yourcompany.newapp
       module: receiver
       provider: fabric8
       version: 1.0.0
-    name: vertx-app-config
+    name: ${APPLICATION_NAME}-app-config
