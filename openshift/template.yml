@@ -109,7 +109,6 @@ objects:
           fabric8.io/git-branch: master
           fabric8.io/git-commit: 90b4bd47a48395559348611cffa18545af289099
           fabric8.io/git-url: https://github.com/hello-world-msa-demo/receiver-service.git
-          sidecar.istio.io/inject: "true"
         labels:
           app: ${APPLICATION_NAME}
           group: com.yourcompany.newapp
@@ -118,13 +117,7 @@ objects:
           version: 1.0.0
       spec:
         containers:
-        - args:
-          - -c
-          - until $(curl -o /dev/null -s -I -f http://localhost:15000); do echo "Waiting
-            for Istio Sidecar..."; sleep 1; done; sleep 10; /usr/local/s2i/run
-          command:
-          - /bin/bash
-          env:
+        - env:
           - name: VERTX_CONFIG_PATH
             value: /deployments/conf/config.yml
           - name: KUBERNETES_NAMESPACE
